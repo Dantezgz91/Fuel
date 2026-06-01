@@ -1,7 +1,6 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.kapt)
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
 }
@@ -66,14 +65,14 @@ dependencies {
     implementation(libs.androidx.material.icons.extended)
     implementation(libs.navigation.compose)
 
-    // Hilt
+    // Hilt (KSP — sin KAPT)
     implementation(libs.hilt.android)
-    kapt(libs.hilt.android.compiler)
+    ksp(libs.hilt.android.compiler)
     implementation(libs.hilt.navigation.compose)
     implementation(libs.hilt.work)
-    kapt(libs.hilt.compiler)
+    ksp(libs.hilt.compiler)
 
-    // Room
+    // Room (KSP)
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
     ksp(libs.room.compiler)
@@ -106,8 +105,4 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
-}
-
-kapt {
-    correctErrorTypes = true
 }
