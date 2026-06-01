@@ -18,10 +18,10 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
-import androidx.compose.material.icons.filled.HorizontalRule
+import androidx.compose.ui.res.painterResource
+import com.fueltracker.app.R
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -170,12 +170,16 @@ private fun SummaryCard(analysis: PriceAnalysis) {
             }
             Spacer(Modifier.height(8.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                val (icon, color, label) = when (analysis.trend) {
-                    PriceTrend.RISING -> Triple(Icons.Default.ArrowUpward, PriceBad, "Tendencia: Subiendo")
-                    PriceTrend.FALLING -> Triple(Icons.Default.ArrowDownward, PriceGood, "Tendencia: Bajando")
-                    PriceTrend.STABLE -> Triple(Icons.Default.HorizontalRule, PriceMedium, "Tendencia: Estable")
+                val (color, label) = when (analysis.trend) {
+                    PriceTrend.RISING -> PriceBad to "Tendencia: Subiendo"
+                    PriceTrend.FALLING -> PriceGood to "Tendencia: Bajando"
+                    PriceTrend.STABLE -> PriceMedium to "Tendencia: Estable"
                 }
-                Icon(icon, null, tint = color, modifier = Modifier.size(16.dp))
+                when (analysis.trend) {
+                    PriceTrend.RISING -> Icon(Icons.Default.ArrowUpward, null, tint = color, modifier = Modifier.size(16.dp))
+                    PriceTrend.FALLING -> Icon(Icons.Default.ArrowDownward, null, tint = color, modifier = Modifier.size(16.dp))
+                    PriceTrend.STABLE -> Icon(painter = painterResource(R.drawable.ic_horizontal_rule), contentDescription = null, tint = color, modifier = Modifier.size(16.dp))
+                }
                 Spacer(Modifier.width(4.dp))
                 Text(label, style = MaterialTheme.typography.bodySmall, color = color)
             }
@@ -375,7 +379,7 @@ private fun InsightsCard(analysis: PriceAnalysis) {
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Analytics, null, modifier = Modifier.size(20.dp))
+                Icon(painter = painterResource(R.drawable.ic_analytics), contentDescription = null, modifier = Modifier.size(20.dp))
                 Spacer(Modifier.width(8.dp))
                 Text("Insights", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
             }
@@ -430,8 +434,8 @@ private fun EmptyAnalyticsCard() {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Icon(
-                Icons.Default.Analytics,
-                null,
+                painter = painterResource(R.drawable.ic_analytics),
+                contentDescription = null,
                 modifier = Modifier.size(48.dp),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )

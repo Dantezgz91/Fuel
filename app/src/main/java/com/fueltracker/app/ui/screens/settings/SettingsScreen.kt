@@ -12,10 +12,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DeleteSweep
-import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material.icons.filled.Sync
+import androidx.compose.ui.res.painterResource
+import com.fueltracker.app.R
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -84,7 +82,7 @@ fun SettingsScreen(
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Sync, null, tint = MaterialTheme.colorScheme.primary)
+                            Icon(painter = painterResource(R.drawable.ic_sync), contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                             Spacer(Modifier.width(8.dp))
                             Text("Sincronización automática", fontWeight = FontWeight.Bold)
                         }
@@ -110,7 +108,7 @@ fun SettingsScreen(
                             HorizontalDivider()
                             Spacer(Modifier.height(12.dp))
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.Schedule, null, tint = MaterialTheme.colorScheme.primary)
+                                Icon(painter = painterResource(R.drawable.ic_schedule), contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                                 Spacer(Modifier.width(8.dp))
                                 Text("Intervalo de actualización", fontWeight = FontWeight.Medium)
                             }
@@ -135,7 +133,7 @@ fun SettingsScreen(
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.DeleteSweep, null, tint = MaterialTheme.colorScheme.primary)
+                            Icon(painter = painterResource(R.drawable.ic_delete_sweep), contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                             Spacer(Modifier.width(8.dp))
                             Text("Historial de datos", fontWeight = FontWeight.Bold)
                         }

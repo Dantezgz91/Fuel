@@ -20,9 +20,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.LocalGasStation
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.ui.res.painterResource
+import com.fueltracker.app.R
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DockedSearchBar
@@ -243,8 +244,8 @@ private fun StationSearchResultCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                Icons.Default.LocalGasStation,
-                null,
+                painter = painterResource(R.drawable.ic_local_gas_station),
+                contentDescription = null,
                 tint = if (isTracked) MaterialTheme.colorScheme.primary
                        else MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -277,7 +278,7 @@ private fun TrackedStationCard(station: GasStation, onUntrack: () -> Unit) {
             modifier = Modifier.padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(Icons.Default.LocalGasStation, null, tint = MaterialTheme.colorScheme.primary)
+            Icon(painter = painterResource(R.drawable.ic_local_gas_station), contentDescription = null, tint = MaterialTheme.colorScheme.primary)
             Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(station.name, fontWeight = FontWeight.SemiBold)

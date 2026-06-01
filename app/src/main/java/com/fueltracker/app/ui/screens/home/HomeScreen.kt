@@ -22,12 +22,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
-import androidx.compose.material.icons.filled.CalendarToday
-import androidx.compose.material.icons.filled.HorizontalRule
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.LocalGasStation
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.ui.res.painterResource
+import com.fueltracker.app.R
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -208,7 +207,7 @@ private fun RecommendationCard(recommendation: Recommendation, trend: PriceTrend
             }
             Spacer(Modifier.height(8.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.CalendarToday, null, modifier = Modifier.size(16.dp))
+                Icon(painter = painterResource(R.drawable.ic_calendar_today), contentDescription = null, modifier = Modifier.size(16.dp))
                 Spacer(Modifier.width(4.dp))
                 Text(
                     "Mejor día: ",
@@ -253,12 +252,11 @@ private fun RecommendationCard(recommendation: Recommendation, trend: PriceTrend
 
 @Composable
 private fun TrendIcon(trend: PriceTrend) {
-    val (icon, color) = when (trend) {
-        PriceTrend.RISING -> Icons.Default.ArrowUpward to PriceBad
-        PriceTrend.FALLING -> Icons.Default.ArrowDownward to PriceGood
-        PriceTrend.STABLE -> Icons.Default.HorizontalRule to PriceMedium
+    when (trend) {
+        PriceTrend.RISING -> Icon(Icons.Default.ArrowUpward, contentDescription = trend.name, tint = PriceBad, modifier = Modifier.size(16.dp))
+        PriceTrend.FALLING -> Icon(Icons.Default.ArrowDownward, contentDescription = trend.name, tint = PriceGood, modifier = Modifier.size(16.dp))
+        PriceTrend.STABLE -> Icon(painter = painterResource(R.drawable.ic_horizontal_rule), contentDescription = trend.name, tint = PriceMedium, modifier = Modifier.size(16.dp))
     }
-    Icon(icon, contentDescription = trend.name, tint = color, modifier = Modifier.size(16.dp))
 }
 
 @Composable
@@ -276,7 +274,7 @@ private fun CheapestStationCard(station: GasStation, price: Double, fuelType: Fu
             )
             Spacer(Modifier.height(4.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.LocalGasStation, null, tint = PriceGood)
+                Icon(painterResource(R.drawable.ic_local_gas_station), null, tint = PriceGood)
                 Spacer(Modifier.width(8.dp))
                 Column {
                     Text(station.name, fontWeight = FontWeight.Bold)
@@ -302,7 +300,7 @@ private fun StationPriceCard(station: GasStation, fuelType: FuelType) {
             modifier = Modifier.padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(Icons.Default.LocalGasStation, null, tint = MaterialTheme.colorScheme.primary)
+            Icon(painterResource(R.drawable.ic_local_gas_station), null, tint = MaterialTheme.colorScheme.primary)
             Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(station.name, fontWeight = FontWeight.SemiBold)
@@ -334,7 +332,7 @@ private fun EmptyStateCard() {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Icon(
-                Icons.Default.LocalGasStation,
+                painterResource(R.drawable.ic_local_gas_station),
                 contentDescription = null,
                 modifier = Modifier.size(48.dp),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
