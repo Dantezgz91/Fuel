@@ -3,10 +3,17 @@
 /local.properties
 /.idea
 .DS_Store
-/build
+build/
 /captures
 .externalNativeBuild
 .cxx
 local.properties
 *.keystore
 !debug.keystore
+
+# Volcados de memoria JVM
+*.hprof
+
+# Exportaciones de inspecciones de Android Studio/IntelliJ (no pertenecen al repo)
+.descriptions.xml
+/*.xml
