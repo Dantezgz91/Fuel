@@ -9,6 +9,7 @@ data class GasStation(
     val province: String,
     val latitude: Double,
     val longitude: Double,
+    val schedule: String? = null,
     val isTracked: Boolean = false,
     val currentPrices: Map<FuelType, Double> = emptyMap()
 )

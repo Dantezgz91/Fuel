@@ -2,6 +2,8 @@ package com.fueltracker.app.di
 
 import android.content.Context
 import androidx.room.Room
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.fueltracker.app.data.local.AppDatabase
 import com.fueltracker.app.data.local.dao.GasStationDao
 import com.fueltracker.app.data.local.dao.PriceRecordDao
@@ -16,6 +18,12 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {
 
+    private val MIGRATION_1_2 = object : Migration(1, 2) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE gas_stations ADD COLUMN schedule TEXT")
+        }
+    }
+
     @Provides
     @Singleton
     fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase {
@@ -23,7 +31,9 @@ object DatabaseModule {
             context,
             AppDatabase::class.java,
             "fuel_tracker.db"
-        ).build()
+        )
+            .addMigrations(MIGRATION_1_2)
+            .build()
     }
 
     @Provides

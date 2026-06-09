@@ -4,15 +4,12 @@ import com.fueltracker.app.domain.model.DayOfMonthPattern
 import com.fueltracker.app.domain.model.DayOfWeekPattern
 import com.fueltracker.app.domain.model.FuelType
 import com.fueltracker.app.domain.model.PriceAnalysis
-import com.fueltracker.app.domain.model.PriceRecord
 import com.fueltracker.app.domain.model.PriceTrend
 import com.fueltracker.app.domain.model.WeekOfMonthPattern
 import com.fueltracker.app.domain.repository.PriceRepository
+import com.fueltracker.app.domain.usecase.DailyPriceAggregator.DailyPrice
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import java.time.DayOfWeek
-import java.time.format.TextStyle
-import java.util.Locale
 import javax.inject.Inject
 
 class AnalyzePatternsUseCase @Inject constructor(
@@ -36,14 +33,22 @@ class AnalyzePatternsUseCase @Inject constructor(
         5 to "5ª semana"
     )
 
+    /** Media de todas las gasolineras seguidas (pantalla Análisis). */
     operator fun invoke(fuelType: FuelType): Flow<PriceAnalysis> {
         return priceRepository.getAllPriceHistory(fuelType).map { records ->
-            analyze(records, fuelType)
+            analyze(DailyPriceAggregator.toDailyMarketPrices(records), fuelType)
         }
     }
 
-    private fun analyze(records: List<PriceRecord>, fuelType: FuelType): PriceAnalysis {
-        if (records.isEmpty()) {
+    /** Historial de una sola gasolinera (recomendaciones en Inicio). */
+    fun forStation(stationId: String, fuelType: FuelType): Flow<PriceAnalysis> {
+        return priceRepository.getPriceHistory(stationId, fuelType).map { records ->
+            analyze(DailyPriceAggregator.toDailyStationPrices(records), fuelType)
+        }
+    }
+
+    private fun analyze(dailyPrices: List<DailyPrice>, fuelType: FuelType): PriceAnalysis {
+        if (dailyPrices.isEmpty()) {
             return PriceAnalysis(
                 fuelType = fuelType,
                 dayOfWeekPatterns = emptyList(),
@@ -60,39 +65,39 @@ class AnalyzePatternsUseCase @Inject constructor(
         }
 
         val dayOfWeekPatterns = (1..7).mapNotNull { day ->
-            val dayRecords = records.filter { it.recordedAt.dayOfWeek.value == day }
-            if (dayRecords.isEmpty()) return@mapNotNull null
+            val dayPrices = dailyPrices.filter { it.date.dayOfWeek.value == day }
+            if (dayPrices.isEmpty()) return@mapNotNull null
             DayOfWeekPattern(
                 dayOfWeek = day,
                 dayName = dayNames[day] ?: "Día $day",
-                averagePrice = dayRecords.map { it.price }.average(),
-                sampleCount = dayRecords.size
+                averagePrice = dayPrices.map { it.price }.average(),
+                sampleCount = dayPrices.size
             )
         }
 
         val dayOfMonthPatterns = (1..31).mapNotNull { day ->
-            val dayRecords = records.filter { it.recordedAt.dayOfMonth == day }
-            if (dayRecords.isEmpty()) return@mapNotNull null
+            val dayPrices = dailyPrices.filter { it.date.dayOfMonth == day }
+            if (dayPrices.isEmpty()) return@mapNotNull null
             DayOfMonthPattern(
                 dayOfMonth = day,
-                averagePrice = dayRecords.map { it.price }.average(),
-                sampleCount = dayRecords.size
+                averagePrice = dayPrices.map { it.price }.average(),
+                sampleCount = dayPrices.size
             )
         }
 
         val weekOfMonthPatterns = (1..5).mapNotNull { week ->
-            val weekRecords = records.filter { getWeekOfMonth(it.recordedAt.dayOfMonth) == week }
-            if (weekRecords.isEmpty()) return@mapNotNull null
+            val weekPrices = dailyPrices.filter { getWeekOfMonth(it.date.dayOfMonth) == week }
+            if (weekPrices.isEmpty()) return@mapNotNull null
             WeekOfMonthPattern(
                 weekOfMonth = week,
                 weekLabel = weekLabels[week] ?: "Semana $week",
-                averagePrice = weekRecords.map { it.price }.average(),
-                sampleCount = weekRecords.size
+                averagePrice = weekPrices.map { it.price }.average(),
+                sampleCount = weekPrices.size
             )
         }
 
-        val prices = records.map { it.price }
-        val trend = calculateTrend(records)
+        val prices = dailyPrices.map { it.price }
+        val trend = calculateTrend(dailyPrices)
 
         return PriceAnalysis(
             fuelType = fuelType,
@@ -111,12 +116,16 @@ class AnalyzePatternsUseCase @Inject constructor(
 
     private fun getWeekOfMonth(dayOfMonth: Int): Int = ((dayOfMonth - 1) / 7) + 1
 
-    private fun calculateTrend(records: List<PriceRecord>): PriceTrend {
-        if (records.size < 4) return PriceTrend.STABLE
-        val sorted = records.sortedBy { it.recordedAt }
-        val recentHalf = sorted.takeLast(sorted.size / 2).map { it.price }.average()
-        val olderHalf = sorted.take(sorted.size / 2).map { it.price }.average()
-        val change = recentHalf - olderHalf
+    private fun calculateTrend(dailyPrices: List<DailyPrice>): PriceTrend {
+        if (dailyPrices.size < 4) return PriceTrend.STABLE
+        val sorted = dailyPrices.sortedBy { it.date }
+        val recentDays = sorted.takeLast(minOf(7, sorted.size / 2).coerceAtLeast(1))
+        val olderDays = sorted.dropLast(recentDays.size).takeLast(recentDays.size)
+        if (olderDays.isEmpty()) return PriceTrend.STABLE
+
+        val recentAvg = recentDays.map { it.price }.average()
+        val olderAvg = olderDays.map { it.price }.average()
+        val change = recentAvg - olderAvg
         return when {
             change > 0.02 -> PriceTrend.RISING
             change < -0.02 -> PriceTrend.FALLING

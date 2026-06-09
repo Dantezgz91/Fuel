@@ -11,4 +11,5 @@ interface GasStationRepository {
     suspend fun untrackStation(stationId: String)
     suspend fun getMunicipalities(): Result<List<Municipality>>
     suspend fun refreshPricesForTrackedStations()
+    suspend fun findStationsNear(latitude: Double, longitude: Double, radiusKm: Double): Result<List<GasStation>>
 }

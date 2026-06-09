@@ -45,3 +45,21 @@ data class Recommendation(
     val confidence: Float,
     val detail: String
 )
+
+data class StationRecommendation(
+    val stationId: String,
+    val stationName: String,
+    val fuelType: FuelType,
+    val bestDayLabel: String,
+    val expectedSaving: Double,
+    val confidence: Float,
+    val detail: String,
+    val trend: PriceTrend
+)
+
+data class FuelTypeConfig(
+    val type: FuelType,
+    val displayName: String,
+    val isEnabled: Boolean,
+    val isAvailableFromApi: Boolean
+)

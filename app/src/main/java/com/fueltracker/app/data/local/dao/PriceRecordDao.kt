@@ -22,8 +22,25 @@ interface PriceRecordDao {
     suspend fun insertPriceRecords(records: List<PriceRecordEntity>)
 
     @Query("DELETE FROM price_records WHERE recordedAt < :timestamp")
-    suspend fun deleteOldRecords(timestamp: Long)
+    suspend fun deleteOldRecords(timestamp: Long): Int
+
+    @Query("DELETE FROM price_records")
+    suspend fun deleteAllPriceRecords(): Int
+
+    @Query("SELECT COUNT(*) FROM price_records WHERE recordedAt < :timestamp")
+    suspend fun countRecordsOlderThan(timestamp: Long): Int
 
     @Query("SELECT COUNT(*) FROM price_records WHERE stationId = :stationId AND fuelType = :fuelType AND recordedAt > :since")
     suspend fun countRecentRecords(stationId: String, fuelType: String, since: Long): Int
+
+    @Query(
+        """
+        SELECT DISTINCT stationId, fuelType FROM price_records
+        WHERE recordedAt >= :dayStart AND recordedAt < :dayEnd
+        """
+    )
+    suspend fun getExistingStationFuelsForDay(dayStart: Long, dayEnd: Long): List<StationFuelKey>
+
+    @Query("SELECT DISTINCT fuelType FROM price_records")
+    fun observeDistinctFuelTypes(): Flow<List<String>>
 }

@@ -18,8 +18,8 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDownward
-import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.ui.res.painterResource
 import com.fueltracker.app.R
 import androidx.compose.material3.Card
@@ -33,8 +33,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -49,8 +47,8 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.fueltracker.app.domain.model.DayOfMonthPattern
 import com.fueltracker.app.domain.model.DayOfWeekPattern
-import com.fueltracker.app.domain.model.FuelType
 import com.fueltracker.app.domain.model.PriceAnalysis
+import com.fueltracker.app.ui.components.FuelTypeChipRow
 import com.fueltracker.app.domain.model.PriceTrend
 import com.fueltracker.app.domain.model.WeekOfMonthPattern
 import com.fueltracker.app.ui.theme.PriceBad
@@ -64,17 +62,7 @@ fun AnalyticsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Análisis de precios", fontWeight = FontWeight.Bold) },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = Color.White
-                )
-            )
-        }
-    ) { paddingValues ->
+    Scaffold { paddingValues ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -82,16 +70,13 @@ fun AnalyticsScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            item {
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(FuelType.entries) { fuelType ->
-                        @OptIn(ExperimentalMaterial3Api::class)
-                        FilterChip(
-                            selected = uiState.selectedFuelType == fuelType,
-                            onClick = { viewModel.selectFuelType(fuelType) },
-                            label = { Text(fuelType.displayName, fontSize = 12.sp) }
-                        )
-                    }
+            if (uiState.visibleFuelTypes.isNotEmpty()) {
+                item {
+                    FuelTypeChipRow(
+                        configs = uiState.visibleFuelTypes,
+                        selected = uiState.selectedFuelType,
+                        onSelect = viewModel::selectFuelType
+                    )
                 }
             }
 
@@ -176,8 +161,8 @@ private fun SummaryCard(analysis: PriceAnalysis) {
                     PriceTrend.STABLE -> PriceMedium to "Tendencia: Estable"
                 }
                 when (analysis.trend) {
-                    PriceTrend.RISING -> Icon(Icons.Default.ArrowUpward, null, tint = color, modifier = Modifier.size(16.dp))
-                    PriceTrend.FALLING -> Icon(Icons.Default.ArrowDownward, null, tint = color, modifier = Modifier.size(16.dp))
+                    PriceTrend.RISING -> Icon(Icons.Default.KeyboardArrowUp, null, tint = color, modifier = Modifier.size(16.dp))
+                    PriceTrend.FALLING -> Icon(Icons.Default.KeyboardArrowDown, null, tint = color, modifier = Modifier.size(16.dp))
                     PriceTrend.STABLE -> Icon(painter = painterResource(R.drawable.ic_horizontal_rule), contentDescription = null, tint = color, modifier = Modifier.size(16.dp))
                 }
                 Spacer(Modifier.width(4.dp))
@@ -204,6 +189,11 @@ private fun DayOfWeekChart(
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text("Por día de la semana", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+            Text(
+                "Media por día de la semana (cada punto = un día con precio oficial)",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
             Spacer(Modifier.height(12.dp))
             if (patterns.isEmpty()) {
                 Text("Sin datos suficientes", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

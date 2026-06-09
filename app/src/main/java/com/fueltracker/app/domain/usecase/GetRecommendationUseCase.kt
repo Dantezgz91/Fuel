@@ -15,7 +15,7 @@ class GetRecommendationUseCase @Inject constructor(
             }
             val worst = analysis.worstDayOfWeek
             val saving = if (worst != null) worst.averagePrice - best.averagePrice else 0.0
-            val confidence = minOf(best.sampleCount / 10f, 1f)
+            val confidence = minOf(best.sampleCount / 4f, 1f)
             val trend = when (analysis.trend) {
                 com.fueltracker.app.domain.model.PriceTrend.RISING -> " Los precios están subiendo."
                 com.fueltracker.app.domain.model.PriceTrend.FALLING -> " Los precios están bajando."

@@ -43,9 +43,26 @@ class PriceRepositoryImpl @Inject constructor(
             .toMap()
     }
 
-    override suspend fun deleteOldRecords(before: LocalDateTime) {
+    override suspend fun deleteOldRecords(before: LocalDateTime): Int {
         val timestamp = before.toEpochSecond(ZoneOffset.UTC)
-        priceRecordDao.deleteOldRecords(timestamp)
+        return priceRecordDao.deleteOldRecords(timestamp)
+    }
+
+    override suspend fun deleteRecordsOutsideRetention(retentionDays: Int): Int {
+        val cutoffSeconds = (System.currentTimeMillis() / 1000) - retentionDays * 86_400L
+        return priceRecordDao.deleteOldRecords(cutoffSeconds)
+    }
+
+    override suspend fun deleteAllPriceRecords(): Int {
+        return priceRecordDao.deleteAllPriceRecords()
+    }
+
+    override fun observeAvailableFuelTypes(): Flow<Set<FuelType>> {
+        return priceRecordDao.observeDistinctFuelTypes().map { fuelTypeNames ->
+            fuelTypeNames.mapNotNull { name ->
+                FuelType.entries.find { it.name == name }
+            }.toSet()
+        }
     }
 
     private fun PriceRecordEntity.toDomain() = PriceRecord(

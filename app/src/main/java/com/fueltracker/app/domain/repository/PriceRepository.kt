@@ -10,5 +10,8 @@ interface PriceRepository {
     fun getAllPriceHistory(fuelType: FuelType): Flow<List<PriceRecord>>
     suspend fun savePriceRecords(records: List<PriceRecord>)
     suspend fun getLatestPrices(stationId: String): Map<FuelType, Double>
-    suspend fun deleteOldRecords(before: LocalDateTime)
+    suspend fun deleteOldRecords(before: LocalDateTime): Int
+    suspend fun deleteRecordsOutsideRetention(retentionDays: Int): Int
+    suspend fun deleteAllPriceRecords(): Int
+    fun observeAvailableFuelTypes(): Flow<Set<FuelType>>
 }

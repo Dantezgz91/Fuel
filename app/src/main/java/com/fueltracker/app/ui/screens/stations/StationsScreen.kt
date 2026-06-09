@@ -16,11 +16,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.ui.res.painterResource
 import com.fueltracker.app.R
@@ -32,12 +33,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -47,7 +47,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -69,18 +68,7 @@ fun StationsScreen(
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Gasolineras", fontWeight = FontWeight.Bold) },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = Color.White
-                )
-            )
-        },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
-    ) { paddingValues ->
+    Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -124,9 +112,28 @@ fun StationsScreen(
                     ) {
                         CircularProgressIndicator(modifier = Modifier.size(24.dp))
                     }
+                } else if (uiState.filteredMunicipalities.isEmpty()) {
+                    Box(
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            if (uiState.municipalities.isEmpty()) {
+                                "No se pudieron cargar los municipios. Comprueba la conexión."
+                            } else if (uiState.municipalityQuery.trim().length < 3) {
+                                "Escribe al menos 3 letras para buscar municipios"
+                            } else {
+                                "Ningún municipio coincide con \"${uiState.municipalityQuery}\""
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 } else {
                     LazyColumn {
-                        items(uiState.filteredMunicipalities, key = { it.id }) { municipality ->
+                        items(uiState.filteredMunicipalities, key = { "municipality-${it.id}" }) { municipality ->
                             ListItem(
                                 headlineContent = { Text(municipality.name) },
                                 supportingContent = {
@@ -149,6 +156,49 @@ fun StationsScreen(
 
             Spacer(Modifier.height(16.dp))
 
+            val stationQuery = uiState.stationQuery.trim()
+            val trackedIds = remember(uiState.trackedStations) {
+                uiState.trackedStations.map { it.id }.toSet()
+            }
+            val visibleStations = remember(uiState.searchResults, stationQuery, trackedIds) {
+                val deduped = uiState.searchResults
+                    .filter { it.id.isNotBlank() }
+                    .distinctBy { it.id }
+                val notAlreadyListed = deduped.filter { it.id !in trackedIds }
+                if (stationQuery.isBlank()) {
+                    notAlreadyListed
+                } else {
+                    notAlreadyListed.filter { station ->
+                        station.name.contains(stationQuery, ignoreCase = true) ||
+                            station.address.contains(stationQuery, ignoreCase = true)
+                    }
+                }
+            }
+
+            if (uiState.searchResults.isNotEmpty() && !uiState.isLoadingStations) {
+                Text(
+                    "Resultados en ${uiState.selectedMunicipality?.name} (${visibleStations.size})",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = uiState.stationQuery,
+                    onValueChange = viewModel::onStationQueryChange,
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    placeholder = { Text("Filtrar por nombre o dirección...") },
+                    trailingIcon = {
+                        if (uiState.stationQuery.isNotBlank()) {
+                            IconButton(onClick = { viewModel.onStationQueryChange("") }) {
+                                Icon(Icons.Default.Clear, "Limpiar filtro")
+                            }
+                        }
+                    }
+                )
+                Spacer(Modifier.height(8.dp))
+            }
+
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 contentPadding = PaddingValues(bottom = 80.dp)
@@ -168,60 +218,62 @@ fun StationsScreen(
                             }
                         }
                     }
-                } else if (uiState.searchResults.isNotEmpty()) {
-                    item {
-                        Text(
-                            "${uiState.searchResults.size} gasolineras en ${uiState.selectedMunicipality?.name}",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(Modifier.height(4.dp))
-                    }
-                    items(uiState.searchResults, key = { it.id }) { station ->
-                        val isTracked = uiState.trackedStations.any { it.id == station.id }
-                        StationSearchResultCard(
-                            station = station,
-                            isTracked = isTracked,
-                            onTrack = { viewModel.trackStation(station.id) },
-                            onUntrack = { viewModel.untrackStation(station.id) }
-                        )
-                    }
-                } else if (uiState.trackedStations.isNotEmpty()) {
-                    item {
-                        Text(
-                            "Siguiendo (${uiState.trackedStations.size})",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(Modifier.height(4.dp))
-                    }
-                    items(uiState.trackedStations, key = { it.id }) { station ->
-                        TrackedStationCard(
-                            station = station,
-                            onUntrack = { viewModel.untrackStation(station.id) }
-                        )
-                    }
                 } else {
-                    item {
-                        Box(
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(32.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Icon(
-                                    Icons.Default.Search,
-                                    null,
-                                    modifier = Modifier.size(48.dp),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Spacer(Modifier.height(8.dp))
-                                Text(
-                                    "Busca un municipio para ver sus gasolineras",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                    if (uiState.trackedStations.isNotEmpty()) {
+                        item {
+                            Text(
+                                "Siguiendo (${uiState.trackedStations.size})",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(Modifier.height(4.dp))
+                        }
+                        itemsIndexed(
+                            uiState.trackedStations.distinctBy { it.id },
+                            key = { index, station -> "tracked-${station.id}-$index" }
+                        ) { _, station ->
+                            TrackedStationCard(
+                                station = station,
+                                onUntrack = { viewModel.untrackStation(station.id) }
+                            )
+                        }
+                    }
+
+                    if (uiState.searchResults.isNotEmpty()) {
+                        itemsIndexed(
+                            visibleStations,
+                            key = { index, station -> "search-${station.id}-$index" }
+                        ) { _, station ->
+                            val isTracked = uiState.trackedStations.any { it.id == station.id }
+                            StationSearchResultCard(
+                                station = station,
+                                isTracked = isTracked,
+                                onTrack = { viewModel.trackStation(station.id) },
+                                onUntrack = { viewModel.untrackStation(station.id) }
+                            )
+                        }
+                    } else if (uiState.trackedStations.isEmpty()) {
+                        item {
+                            Box(
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(32.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Icon(
+                                        Icons.Default.Search,
+                                        null,
+                                        modifier = Modifier.size(48.dp),
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Spacer(Modifier.height(8.dp))
+                                    Text(
+                                        "Busca un municipio para ver sus gasolineras",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
                             }
                         }
                     }
@@ -289,7 +341,7 @@ private fun TrackedStationCard(station: GasStation, onUntrack: () -> Unit) {
                 )
             }
             IconButton(onClick = onUntrack) {
-                Icon(Icons.Default.Remove, "Dejar de seguir", tint = MaterialTheme.colorScheme.error)
+                Icon(Icons.Default.Close, "Dejar de seguir", tint = MaterialTheme.colorScheme.error)
             }
         }
     }

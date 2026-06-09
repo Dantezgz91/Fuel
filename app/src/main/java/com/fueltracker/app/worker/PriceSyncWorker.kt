@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import com.fueltracker.app.data.local.preferences.UserPreferences
 import com.fueltracker.app.domain.repository.GasStationRepository
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -12,12 +13,14 @@ import dagger.assisted.AssistedInject
 class PriceSyncWorker @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted workerParams: WorkerParameters,
-    private val gasStationRepository: GasStationRepository
+    private val gasStationRepository: GasStationRepository,
+    private val userPreferences: UserPreferences
 ) : CoroutineWorker(context, workerParams) {
 
     override suspend fun doWork(): Result {
         return try {
             gasStationRepository.refreshPricesForTrackedStations()
+            userPreferences.setLastSyncEpochMs(System.currentTimeMillis())
             Result.success()
         } catch (e: Exception) {
             Result.retry()
@@ -26,5 +29,6 @@ class PriceSyncWorker @AssistedInject constructor(
 
     companion object {
         const val WORK_NAME = "price_sync_worker"
+        const val ONE_TIME_WORK_NAME = "price_sync_worker_once"
     }
 }

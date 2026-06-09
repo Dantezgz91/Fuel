@@ -9,7 +9,7 @@ import com.fueltracker.app.data.local.entity.PriceRecordEntity
 
 @Database(
     entities = [GasStationEntity::class, PriceRecordEntity::class],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

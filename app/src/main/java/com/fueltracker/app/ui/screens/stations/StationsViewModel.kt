@@ -17,6 +17,7 @@ import javax.inject.Inject
 data class StationsUiState(
     val trackedStations: List<GasStation> = emptyList(),
     val searchResults: List<GasStation> = emptyList(),
+    val stationQuery: String = "",
     val municipalities: List<Municipality> = emptyList(),
     val filteredMunicipalities: List<Municipality> = emptyList(),
     val municipalityQuery: String = "",
@@ -41,16 +42,19 @@ class StationsViewModel @Inject constructor(
     }
 
     fun loadMunicipalities() {
-        if (_uiState.value.municipalities.isNotEmpty()) return
+        if (_uiState.value.municipalities.isNotEmpty()) {
+            applyMunicipalityFilter(_uiState.value.municipalityQuery)
+            return
+        }
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isSearchingMunicipalities = true)
             gasStationRepository.getMunicipalities().fold(
                 onSuccess = { list ->
                     _uiState.value = _uiState.value.copy(
                         municipalities = list,
-                        filteredMunicipalities = list.take(50),
                         isSearchingMunicipalities = false
                     )
+                    applyMunicipalityFilter(_uiState.value.municipalityQuery)
                 },
                 onFailure = { e ->
                     _uiState.value = _uiState.value.copy(
@@ -63,17 +67,38 @@ class StationsViewModel @Inject constructor(
     }
 
     fun onMunicipalityQueryChange(query: String) {
-        val filtered = if (query.isBlank()) {
-            _uiState.value.municipalities.take(50)
-        } else {
-            _uiState.value.municipalities.filter {
-                it.name.contains(query, ignoreCase = true)
-            }.take(50)
+        _uiState.value = _uiState.value.copy(municipalityQuery = query)
+        applyMunicipalityFilter(query)
+    }
+
+    private fun applyMunicipalityFilter(query: String) {
+        val municipalities = _uiState.value.municipalities
+        val normalizedQuery = query.trim()
+        val filtered = when {
+            normalizedQuery.length < 3 -> {
+                // Evita listas gigantes: hasta que haya 3 letras, muestra una lista útil y corta.
+                municipalities.filter(::isCapital)
+            }
+            else -> {
+                municipalities.filter { municipality ->
+                    municipality.name.contains(normalizedQuery, ignoreCase = true) ||
+                        municipality.province.contains(normalizedQuery, ignoreCase = true) ||
+                        municipality.autonomousCommunity.contains(normalizedQuery, ignoreCase = true)
+                }
+            }
         }
-        _uiState.value = _uiState.value.copy(
-            municipalityQuery = query,
-            filteredMunicipalities = filtered
+
+        // Prioriza capitales (Municipio == Provincia) y luego orden alfabético.
+        val sorted = filtered.sortedWith(
+            compareByDescending<Municipality> { isCapital(it) }
+                .thenBy { it.name.lowercase() }
         )
+
+        _uiState.value = _uiState.value.copy(filteredMunicipalities = sorted.distinctBy { it.id })
+    }
+
+    private fun isCapital(municipality: Municipality): Boolean {
+        return municipality.name.equals(municipality.province, ignoreCase = true)
     }
 
     fun selectMunicipality(municipality: Municipality) {
@@ -82,13 +107,14 @@ class StationsViewModel @Inject constructor(
             municipalityQuery = municipality.name,
             isLoadingStations = true,
             searchResults = emptyList(),
+            stationQuery = "",
             error = null
         )
         viewModelScope.launch {
             gasStationRepository.searchStationsByMunicipality(municipality.id).fold(
                 onSuccess = { stations ->
                     _uiState.value = _uiState.value.copy(
-                        searchResults = stations,
+                        searchResults = stations.distinctBy { it.id },
                         isLoadingStations = false
                     )
                 },
@@ -116,5 +142,9 @@ class StationsViewModel @Inject constructor(
 
     fun clearError() {
         _uiState.value = _uiState.value.copy(error = null)
+    }
+
+    fun onStationQueryChange(query: String) {
+        _uiState.value = _uiState.value.copy(stationQuery = query)
     }
 }

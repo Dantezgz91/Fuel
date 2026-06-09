@@ -18,8 +18,17 @@ interface GasStationDao {
     @Query("SELECT * FROM gas_stations WHERE municipalityId = :municipalityId")
     suspend fun getStationsByMunicipality(municipalityId: String): List<GasStationEntity>
 
+    @Query("SELECT * FROM gas_stations")
+    suspend fun getAllStations(): List<GasStationEntity>
+
+    @Query("SELECT COUNT(*) FROM gas_stations")
+    suspend fun countStations(): Int
+
     @Query("SELECT * FROM gas_stations WHERE id = :id")
     suspend fun getStationById(id: String): GasStationEntity?
+
+    @Query("SELECT * FROM gas_stations WHERE id IN (:ids)")
+    suspend fun getStationsByIds(ids: List<String>): List<GasStationEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertStations(stations: List<GasStationEntity>)

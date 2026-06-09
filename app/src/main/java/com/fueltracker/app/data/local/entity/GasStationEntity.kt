@@ -14,6 +14,7 @@ data class GasStationEntity(
     val latitude: Double,
     val longitude: Double,
     val municipalityId: String,
+    val schedule: String? = null,
     val isTracked: Boolean = false,
     val trackedAt: Long? = null
 )
